@@ -2,6 +2,7 @@
 
 PWD=$(pwd)
 LOG="/mnt/us/gphotos.log"
+BATTERY_NOTIFY_TRESHOLD=3
 SLEEP_MINUTES=1440 #24h
 FBINK="fbink -q"
 FONT="regular=/usr/java/lib/fonts/Palatino-Regular.ttf"
@@ -118,8 +119,9 @@ while true; do
     $FBINK -x 20 "Getting new image..."
     ./get_gphoto.py
     fbink -q -c -f -i photo.jpg -g w=-1,h=-1,dither=PASSTHROUGH
-    fbink -q $BAT
-
+    if [ ${BAT::-1} -lt ${BATTERY_NOTIFY_TRESHOLD} ]; then
+        fbink -q "> Recharge"
+    fi
     echo `date '+%Y-%m-%d_%H:%M:%S'`: Battery level: $BAT >> $LOG
 
     ### Enable powersave
