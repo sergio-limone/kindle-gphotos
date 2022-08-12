@@ -31,6 +31,7 @@ class KindleGphotos:
             "https://photoslibrary.googleapis.com/$discovery" "/rest?version=v1"
         )
 
+        self.album_title = 'kindle-landscape-1'
         self.auth = Authorize(
             scope, credentials_file, secret_file, 3)
 
@@ -47,7 +48,7 @@ class KindleGphotos:
         for album in mylist['sharedAlbums']:
             if 'title' in album.keys():
                 log.debug('"'+album['title']+'"')
-                if album['title'] == 'kindle':
+                if album['title'] == self.album_title:
                     print(album['title'], album['mediaItemsCount'])
                     items_count = int(album['mediaItemsCount'])
                     album_id = album['id']
