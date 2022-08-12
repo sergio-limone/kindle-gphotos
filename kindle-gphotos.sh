@@ -8,9 +8,13 @@ FBINK="fbink -q"
 FONT="regular=/usr/java/lib/fonts/Palatino-Regular.ttf"
 
 ### uncomment/adjust according to your hardware
-#PW3
+#KT
 FBROTATE="/sys/devices/platform/imx_epdc_fb/graphics/fb0/rotate"
-BACKLIGHT="/sys/devices/platform/imx-i2c.0/i2c-0/0-003c/max77696-bl.0/backlight/max77696-bl/brightness"
+BACKLIGHT="/dev/null"
+
+#PW3
+#FBROTATE="/sys/devices/platform/imx_epdc_fb/graphics/fb0/rotate"
+#BACKLIGHT="/sys/devices/platform/imx-i2c.0/i2c-0/0-003c/max77696-bl.0/backlight/max77696-bl/brightness"
 
 #PW2
 #FBROTATE="/sys/devices/platform/mxc_epdc_fb/graphics/fb0/rotate"
