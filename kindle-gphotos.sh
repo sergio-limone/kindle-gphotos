@@ -77,67 +77,64 @@ echo "`date '+%Y-%m-%d_%H:%M:%S'`: Entering main loop..." >> $LOG
 
 while true; do
 
-	NOW=$(date +%s)
+  NOW=$(date +%s)
 
-	let SLEEP_SECONDS=60*SLEEP_MINUTES
-	let WAKEUP_TIME=$NOW+SLEEP_SECONDS
-	echo `date '+%Y-%m-%d_%H:%M:%S'`: Wake-up time set for  `date -d @${WAKEUP_TIME}` >> $LOG
+  let SLEEP_SECONDS=60*SLEEP_MINUTES
+  let WAKEUP_TIME=$NOW+SLEEP_SECONDS
+  echo `date '+%Y-%m-%d_%H:%M:%S'`: Wake-up time set for  `date -d @${WAKEUP_TIME}` >> $LOG
+  ### Disable CPU Powersave
+  echo ondemand > /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor
 
-    ### Dim Backlight
-    echo -n 0 > $BACKLIGHT
+  ### Dim Backlight
+  echo -n 0 > $BACKLIGHT
+  echo 0 > $FBROTATE
 
-	### Disable CPU Powersave
-	echo ondemand > /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor
+  lipc-set-prop com.lab126.cmd wirelessEnable 1
+  ### Wait for wifi interface to come up
+  echo `date '+%Y-%m-%d_%H:%M:%S'`: Waiting for wifi interface to come up... >> $LOG
+  while wait_wlan_ready; do
+    sleep 1
+  done
 
-    echo 0 > $FBROTATE
+  ### Wifi interface is up, connect to access point.
+  ./wifi.sh
 
-    lipc-set-prop com.lab126.cmd wirelessEnable 1
-    ### Wait for wifi interface to come up
-    echo `date '+%Y-%m-%d_%H:%M:%S'`: Waiting for wifi interface to come up... >> $LOG
-    while wait_wlan_ready; do
-        sleep 1
-    done
-
-    ### Wifi interface is up, connect to access point.
-    ./wifi.sh
-
-	### Wait for WIFI connection
-    TRYCNT=0
-    NOWIFI=0
-    echo `date '+%Y-%m-%d_%H:%M:%S'`: Waiting for wifi interface to become ready... >> $LOG
-	while wait_wlan_connected; do
-        if [ ${TRYCNT} -gt 30 ]; then
-            ### waited long enough
-            echo "`date '+%Y-%m-%d_%H:%M:%S'`: No Wifi... ($TRYCNT)" >> $LOG
-            NOWIFI=1
-            $FBINK -x 5 "No Wifi..."
-            break
-        fi
-	  sleep 1
-      let TRYCNT=$TRYCNT+1
-	done
-
-	echo `date '+%Y-%m-%d_%H:%M:%S'`: WIFI connected! >> $LOG
-
-    BAT=$(gasgauge-info -c)
-    $FBINK -x 20 "Getting new image..."
-    ./get_gphoto.py
-    fbink -q -c -f -i photo.jpg -g w=-1,h=-1,dither=PASSTHROUGH
-    if [ ${BAT::-1} -lt ${BATTERY_NOTIFY_TRESHOLD} ]; then
-        fbink -q "> Recharge"
+  ### Wait for WIFI connection
+  TRYCNT=0
+  NOWIFI=0
+  echo `date '+%Y-%m-%d_%H:%M:%S'`: Waiting for wifi interface to become ready... >> $LOG
+  while wait_wlan_connected; do
+    if [ ${TRYCNT} -gt 30 ]; then
+      ### waited long enough
+      echo "`date '+%Y-%m-%d_%H:%M:%S'`: No Wifi... ($TRYCNT)" >> $LOG
+      NOWIFI=1
+      $FBINK -x 5 "No Wifi..."
+      break
     fi
-    echo `date '+%Y-%m-%d_%H:%M:%S'`: Battery level: $BAT >> $LOG
+    sleep 1
+    let TRYCNT=$TRYCNT+1
+  done
 
-    ### Enable powersave
-    echo powersave > /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor
+  echo `date '+%Y-%m-%d_%H:%M:%S'`: WIFI connected! >> $LOG
 
-    ### flight mode on...
-    lipc-set-prop com.lab126.cmd wirelessEnable 0
+  BAT=$(gasgauge-info -c | tr -d "%")
+  $FBINK -x 40 -y 5 "Getting new image..."
+  ./get_gphoto.py
+  fbink -q -c -f -i photo.jpg -g w=-1,h=-1,dither=PASSTHROUGH
+  if [ ${BAT} -lt ${BATTERY_NOTIFY_TRESHOLD} ]; then
+    fbink -x 40 -y 5 -q "> Recharge <"
+  fi
+  echo `date '+%Y-%m-%d_%H:%M:%S'`: Battery level: $BAT >> $LOG
 
-	sleep 2
+  ### flight mode on...
+  lipc-set-prop com.lab126.cmd wirelessEnable 0
 
-    ### set wake up time to one hour
-    echo `date '+%Y-%m-%d_%H:%M:%S'`: Sleeping now... >> $LOG
-	rtcwake -d /dev/rtc0 -m mem -s $SLEEP_SECONDS
-	### Go into Suspend to Memory (STR)
+  ### Enable powersave
+  echo powersave > /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor
+
+  sleep 2
+
+  ### set wake up time to calculated time
+  rtcwake -d /dev/rtc0 -m mem -s $SLEEP_SECONDS
+  ### Go into Suspend to Memory (STR)
 done
