@@ -77,13 +77,14 @@ echo "`date '+%Y-%m-%d_%H:%M:%S'`: Entering main loop..." >> $LOG
 
 while true; do
 
+  ### Disable CPU Powersave
+  echo ondemand > /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor
+
   NOW=$(date +%s)
 
   let SLEEP_SECONDS=60*SLEEP_MINUTES
   let WAKEUP_TIME=$NOW+SLEEP_SECONDS
   echo `date '+%Y-%m-%d_%H:%M:%S'`: Wake-up time set for  `date -d @${WAKEUP_TIME}` >> $LOG
-  ### Disable CPU Powersave
-  echo ondemand > /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor
 
   ### Dim Backlight
   echo -n 0 > $BACKLIGHT
@@ -108,7 +109,7 @@ while true; do
       ### waited long enough
       echo "`date '+%Y-%m-%d_%H:%M:%S'`: No Wifi... ($TRYCNT)" >> $LOG
       NOWIFI=1
-      $FBINK -x 5 "No Wifi..."
+      $FBINK -x 40 -y 5"> No WiFi <"
       break
     fi
     sleep 1
