@@ -8,18 +8,20 @@ FBINK="fbink -q"
 FONT="regular=/usr/java/lib/fonts/Palatino-Regular.ttf"
 
 ### uncomment/adjust according to your hardware
-#KT
-FBROTATE="/sys/devices/platform/imx_epdc_fb/graphics/fb0/rotate"
+#KT / K5
+FBROTATE="/sys/devices/platform/mxc_epdc_fb/graphics/fb0/rotate"
 BACKLIGHT="/dev/null"
+RTC="/dev/rtc1"
 
 #PW3
 #FBROTATE="/sys/devices/platform/imx_epdc_fb/graphics/fb0/rotate"
 #BACKLIGHT="/sys/devices/platform/imx-i2c.0/i2c-0/0-003c/max77696-bl.0/backlight/max77696-bl/brightness"
+#RTC="/dev/rtc0"
 
 #PW2
 #FBROTATE="/sys/devices/platform/mxc_epdc_fb/graphics/fb0/rotate"
 #BACKLIGHT="/sys/devices/system/fl_tps6116x/fl_tps6116x0/fl_intensity"
-
+#RTC="/dev/rtc0"
 wait_wlan_connected() {
   return `lipc-get-prop com.lab126.wifid cmState | grep CONNECTED | wc -l`
 }
@@ -39,7 +41,9 @@ echo "`date '+%Y-%m-%d_%H:%M:%S'`: Starting up, killing framework et. al." >> $L
 stop lab126_gui
 ### give an update to the outside world...
 echo 0 > $FBROTATE
-$FBINK -w -c -f -m -t $FONT,size=20,top=410,bottom=0,left=0,right=0 "Starting gphotos..." > /dev/null 2>&1
+if [ -f "photo.jpg" ]; then
+  fbink -q -c -f -i photo.jpg -g w=-1,h=-1,dither=PASSTHROUGH
+fi
 #echo 3 > $FBROTATE
 sleep 1
 ### keep stopping stuff
@@ -109,7 +113,7 @@ while true; do
       ### waited long enough
       echo "`date '+%Y-%m-%d_%H:%M:%S'`: No Wifi... ($TRYCNT)" >> $LOG
       NOWIFI=1
-      $FBINK -x 40 -y 5"> No WiFi <"
+      $FBINK -x 18 -y 5 -q "> No WiFi <"
       break
     fi
     sleep 1
@@ -119,11 +123,11 @@ while true; do
   echo `date '+%Y-%m-%d_%H:%M:%S'`: WIFI connected! >> $LOG
 
   BAT=$(gasgauge-info -c | tr -d "%")
-  $FBINK -x 40 -y 5 "Getting new image..."
+  $FBINK -x 18 -y 5 -q "> Getting new image <"
   ./get_gphoto.py
   fbink -q -c -f -i photo.jpg -g w=-1,h=-1,dither=PASSTHROUGH
   if [ ${BAT} -lt ${BATTERY_NOTIFY_TRESHOLD} ]; then
-    fbink -x 40 -y 5 -q "> Recharge <"
+    fbink -x 18 -y 5 -q "> Recharge <"
   fi
   echo `date '+%Y-%m-%d_%H:%M:%S'`: Battery level: $BAT >> $LOG
 
@@ -136,6 +140,6 @@ while true; do
   sleep 2
 
   ### set wake up time to calculated time
-  rtcwake -d /dev/rtc0 -m mem -s $SLEEP_SECONDS
+  rtcwake -d ${RTC} -m mem -s $SLEEP_SECONDS
   ### Go into Suspend to Memory (STR)
 done
